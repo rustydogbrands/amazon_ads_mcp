@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 def _asin_expression(asin: str) -> List[Dict[str, str]]:
     """Build a single-ASIN targeting expression (for create endpoints).
 
-    Note: create endpoints expect UPPER_SNAKE_CASE enum values
-    (e.g. ASIN_SAME_AS), while list endpoints return lowerCamelCase
-    (e.g. asinSameAs). This helper is used for creates.
+    Note: v3 Sponsored Products endpoints — both list and create, for both
+    positive targets and negative targets — use UPPER_SNAKE_CASE enum
+    values (e.g. ASIN_SAME_AS). Never pass the camelCase form
+    (asinSameAs); the API rejects it with HTTP 400.
     """
     return [{"type": "ASIN_SAME_AS", "value": asin}]
 
@@ -1229,9 +1230,9 @@ async def create_sp_target(
     :param campaign_id: Parent campaign ID
     :param ad_group_id: Parent ad group ID
     :param bid: Bid amount
-    :param target_asin: Shortcut — target a specific ASIN (asinSameAs)
+    :param target_asin: Shortcut — target a specific ASIN (ASIN_SAME_AS)
     :param expression: Full expression predicate list
-        (e.g. [{"type": "asinSameAs", "value": "B0..."}])
+        (e.g. [{"type": "ASIN_SAME_AS", "value": "B0..."}])
     :param expression_type: MANUAL (default) or AUTO
     :param state: Initial state (ENABLED, PAUSED)
     """
@@ -1440,7 +1441,7 @@ async def create_sp_negative_target(
     `negative_asin` or `expression`.
 
     :param campaign_id: Parent campaign ID (must be AUTO)
-    :param negative_asin: Shortcut — block a specific ASIN (asinSameAs)
+    :param negative_asin: Shortcut — block a specific ASIN (ASIN_SAME_AS)
     :param expression: Full expression predicate list
     :param state: Initial state (ENABLED, PAUSED)
     """
