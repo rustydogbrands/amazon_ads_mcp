@@ -52,6 +52,29 @@ def _print_dry_run(method, endpoint, body):
         print(f"    {line}")
 
 
+def _safe_json(resp):
+    """Parse a response body as JSON, falling back to a text snapshot.
+
+    Amazon/proxy failures periodically return HTML or plain text (WAF
+    blocks, 5xx gateway pages). Calling resp.json() on those bodies
+    raises json.JSONDecodeError mid-loop; with partial negatives already
+    applied, the run then crashes before any results file is written.
+    Return a structured fallback dict instead so the caller can record
+    the failure and keep going.
+    """
+    try:
+        return resp.json()
+    except (json.JSONDecodeError, ValueError) as e:
+        return {
+            "parse_error": f"{type(e).__name__}: {e}",
+            "raw_body": (resp.text or "")[:2000],
+        }
+
+
+def _write_results(results_file, results):
+    Path(results_file).write_text(json.dumps(results, indent=2, default=str))
+
+
 async def create_negative_keywords(client, campaign_id, ad_group_id, terms, match_type, dry_run=False):
     """match_type: NEGATIVE_PHRASE or NEGATIVE_EXACT."""
     if not terms:
@@ -65,7 +88,7 @@ async def create_negative_keywords(client, campaign_id, ad_group_id, terms, matc
         json=body,
         headers={"Accept": NEG_KW_CT, "Content-Type": NEG_KW_CT},
     )
-    raw = resp.json()
+    raw = _safe_json(resp)
     if resp.status_code not in (200, 207):
         return {
             "attempted": len(terms),
@@ -74,7 +97,7 @@ async def create_negative_keywords(client, campaign_id, ad_group_id, terms, matc
             "error": [{"message": f"HTTP {resp.status_code}", "body": raw}],
         }
     # V3 response: {"negativeKeywords": {"success": [...], "error": [...]}}
-    wrap = raw.get("negativeKeywords", {})
+    wrap = raw.get("negativeKeywords", {}) if isinstance(raw, dict) else {}
     return {
         "attempted": len(terms),
         "http_status": resp.status_code,
@@ -95,7 +118,7 @@ async def create_negative_asin_targets(client, campaign_id, ad_group_id, asins, 
         json=body,
         headers={"Accept": NEG_TGT_CT, "Content-Type": NEG_TGT_CT},
     )
-    raw = resp.json()
+    raw = _safe_json(resp)
     if resp.status_code not in (200, 207):
         return {
             "attempted": len(asins),
@@ -103,7 +126,7 @@ async def create_negative_asin_targets(client, campaign_id, ad_group_id, asins, 
             "success": [],
             "error": [{"message": f"HTTP {resp.status_code}", "body": raw}],
         }
-    wrap = raw.get("negativeTargetingClauses", {})
+    wrap = raw.get("negativeTargetingClauses", {}) if isinstance(raw, dict) else {}
     return {
         "attempted": len(asins),
         "http_status": resp.status_code,
@@ -129,6 +152,14 @@ async def main(plan_file, dry_run):
         "campaigns": [],
     }
     counts = {"NEGATIVE_PHRASE": 0, "NEGATIVE_EXACT": 0, "NEGATIVE_ASIN": 0}
+
+    # Write an empty results file up front so a mid-loop crash still
+    # leaves a recoverable audit trail. Subsequent per-campaign writes
+    # overwrite this file with progressively more complete state.
+    results_file = None
+    if not dry_run:
+        results_file = str(plan_file).replace("plan_", "results_")
+        _write_results(results_file, results)
 
     for c in plan["campaigns"]:
         print(f"\n>>> {c['name']}")
@@ -170,6 +201,10 @@ async def main(plan_file, dry_run):
                 for e in r["error"]:
                     print(f"    err: {e}")
         results["campaigns"].append(entry)
+        if results_file is not None:
+            # Persist after each campaign so a network/JSON failure on the
+            # next iteration still leaves an audit trail on disk.
+            _write_results(results_file, results)
 
     if dry_run:
         print("\n=== DRY-RUN SUMMARY — nothing sent to Amazon ===")
@@ -178,8 +213,6 @@ async def main(plan_file, dry_run):
         print(f"  NEGATIVE_ASIN   payloads: {counts['NEGATIVE_ASIN']}")
         print(f"  TOTAL would-be API objects: {sum(counts.values())}")
     else:
-        results_file = str(plan_file).replace("plan_", "results_")
-        Path(results_file).write_text(json.dumps(results, indent=2, default=str))
         print(f"\nResults written to {results_file}")
 
 
