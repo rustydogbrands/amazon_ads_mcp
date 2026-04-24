@@ -117,8 +117,10 @@ async def main(plan_file, dry_run):
     client = None
     if not dry_run:
         # Only import + init the HTTP client when we actually need to send.
-        from amazon_ads_mcp.utils.http_client import get_authenticated_client
-        client = await get_authenticated_client()
+        # Standalone bootstrap — the module-level singleton populated by
+        # ServerBuilder.build() does not exist when this CLI runs directly.
+        from amazon_ads_mcp.utils.http_client import bootstrap_standalone_client
+        client = await bootstrap_standalone_client()
 
     results = {
         "plan_file": str(Path(plan_file).name),
