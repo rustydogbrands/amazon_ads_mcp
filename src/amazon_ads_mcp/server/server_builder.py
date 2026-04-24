@@ -26,7 +26,7 @@ try:
 except ImportError:
     create_oauth_middleware = None
 from ..utils.header_resolver import HeaderNameResolver
-from ..utils.http_client import AuthenticatedClient
+from ..utils.http_client import AuthenticatedClient, set_authenticated_client
 from ..utils.media import MediaTypeRegistry
 from ..utils.region_config import RegionConfig
 from .openapi_utils import slim_openapi_for_tools
@@ -296,7 +296,7 @@ class ServerBuilder:
 
         import httpx
 
-        return AuthenticatedClient(
+        client = AuthenticatedClient(
             auth_manager=self.auth_manager,
             media_registry=self.media_registry,
             header_resolver=self.header_resolver,
@@ -309,6 +309,8 @@ class ServerBuilder:
                 pool=10.0,  # Pool timeout
             ),
         )
+        set_authenticated_client(client)
+        return client
 
     async def _register_sidecar_middleware(self) -> None:
         """Install the sidecar transform middleware.
