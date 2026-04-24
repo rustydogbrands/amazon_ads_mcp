@@ -1318,6 +1318,23 @@ async def register_sampling_tools(server: FastMCP):
             )
 
 
+def _require_active_profile() -> None:
+    """Raise ValueError if no active profile is set.
+
+    Mirrors the precondition already enforced by the download tools
+    (see ``download_export_tool``). Without this guard, campaign-
+    management writes silently fall through to whatever default
+    profile the auth layer resolves, which can misroute mutations
+    across brand accounts (e.g. PBN ↔ SH).
+    """
+    auth_mgr = get_auth_manager()
+    profile_id = auth_mgr.get_active_profile_id() if auth_mgr else None
+    if not profile_id:
+        raise ValueError(
+            "No active profile set. Call set_active_profile or set_context first."
+        )
+
+
 async def register_campaign_management_tools(server: FastMCP):
     """Register campaign management (write) tools.
 
@@ -1338,6 +1355,7 @@ async def register_campaign_management_tools(server: FastMCP):
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> UpdateCampaignResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_campaigns(
             campaign_id=campaign_id,
             name=name,
@@ -1361,6 +1379,7 @@ async def register_campaign_management_tools(server: FastMCP):
         budget_amount: Optional[float] = None,
         budget_type: Optional[str] = None,
     ) -> UpdateCampaignResponse:
+        _require_active_profile()
         result = await campaign_management.update_sb_campaigns(
             campaign_id=campaign_id,
             name=name,
@@ -1381,6 +1400,7 @@ async def register_campaign_management_tools(server: FastMCP):
         state: Optional[str] = None,
         default_bid: Optional[float] = None,
     ) -> UpdateAdGroupResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_ad_groups(
             ad_group_id=ad_group_id,
             name=name,
@@ -1399,6 +1419,7 @@ async def register_campaign_management_tools(server: FastMCP):
         state: Optional[str] = None,
         bid: Optional[float] = None,
     ) -> UpdateKeywordResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_keywords(
             keyword_id=keyword_id,
             state=state,
@@ -1415,6 +1436,7 @@ async def register_campaign_management_tools(server: FastMCP):
         ad_id: str,
         state: Optional[str] = None,
     ) -> UpdateProductAdResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_product_ads(
             ad_id=ad_id,
             state=state,
@@ -1432,6 +1454,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListAdGroupsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_ad_groups(
             campaign_id=campaign_id,
             state_filter=state_filter,
@@ -1452,6 +1475,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListKeywordsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_keywords(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1476,6 +1500,7 @@ async def register_campaign_management_tools(server: FastMCP):
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> CreateCampaignResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_campaign(
             name=name,
             targeting_type=targeting_type,
@@ -1499,6 +1524,7 @@ async def register_campaign_management_tools(server: FastMCP):
         default_bid: float,
         state: str = "ENABLED",
     ) -> CreateAdGroupResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_ad_group(
             campaign_id=campaign_id,
             name=name,
@@ -1520,6 +1546,7 @@ async def register_campaign_management_tools(server: FastMCP):
         bid: float,
         state: str = "ENABLED",
     ) -> CreateKeywordResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_keyword(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1542,6 +1569,7 @@ async def register_campaign_management_tools(server: FastMCP):
         sku: Optional[str] = None,
         state: str = "ENABLED",
     ) -> CreateProductAdResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_product_ad(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1563,6 +1591,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListCampaignsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_campaigns(
             name_filter=name_filter,
             state_filter=state_filter,
@@ -1584,6 +1613,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListProductAdsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_product_ads(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1608,6 +1638,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListPortfoliosResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_portfolios(
             name_filter=name_filter,
             portfolio_id_filter=portfolio_id_filter,
@@ -1631,6 +1662,7 @@ async def register_campaign_management_tools(server: FastMCP):
         match_type: str,
         state: str = "ENABLED",
     ) -> CreateNegativeKeywordResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_negative_keyword(
             campaign_id=campaign_id,
             keyword_text=keyword_text,
@@ -1650,6 +1682,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListNegativeKeywordsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_negative_keywords(
             campaign_id=campaign_id,
             state_filter=state_filter,
@@ -1667,6 +1700,7 @@ async def register_campaign_management_tools(server: FastMCP):
         keyword_id: str,
         state: Optional[str] = None,
     ) -> UpdateNegativeKeywordResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_negative_keywords(
             keyword_id=keyword_id,
             state=state,
@@ -1691,6 +1725,7 @@ async def register_campaign_management_tools(server: FastMCP):
         expression_type: str = "MANUAL",
         state: str = "ENABLED",
     ) -> CreateTargetResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_target(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1714,6 +1749,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListTargetsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_targets(
             campaign_id=campaign_id,
             ad_group_id=ad_group_id,
@@ -1733,6 +1769,7 @@ async def register_campaign_management_tools(server: FastMCP):
         bid: Optional[float] = None,
         state: Optional[str] = None,
     ) -> UpdateTargetResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_targets(
             target_id=target_id,
             bid=bid,
@@ -1755,6 +1792,7 @@ async def register_campaign_management_tools(server: FastMCP):
         expression: Optional[List[Dict[str, str]]] = None,
         state: str = "ENABLED",
     ) -> CreateNegativeTargetResponse:
+        _require_active_profile()
         result = await campaign_management.create_sp_negative_target(
             campaign_id=campaign_id,
             negative_asin=negative_asin,
@@ -1774,6 +1812,7 @@ async def register_campaign_management_tools(server: FastMCP):
         max_results: int = 100,
         next_token: Optional[str] = None,
     ) -> ListNegativeTargetsResponse:
+        _require_active_profile()
         result = await campaign_management.list_sp_negative_targets(
             campaign_id=campaign_id,
             state_filter=state_filter,
@@ -1791,6 +1830,7 @@ async def register_campaign_management_tools(server: FastMCP):
         target_id: str,
         state: Optional[str] = None,
     ) -> UpdateNegativeTargetResponse:
+        _require_active_profile()
         result = await campaign_management.update_sp_negative_targets(
             target_id=target_id,
             state=state,
