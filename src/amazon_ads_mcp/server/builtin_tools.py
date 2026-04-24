@@ -19,7 +19,7 @@ Examples
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from fastmcp import Context, FastMCP
 
@@ -30,6 +30,13 @@ from ..config.settings import settings
 from ..middleware.auth_session_bridge import compute_session_state
 from ..models.builtin_responses import (
     ClearProfileResponse,
+    CreateAdGroupResponse,
+    CreateCampaignResponse,
+    CreateKeywordResponse,
+    CreateNegativeKeywordResponse,
+    CreateNegativeTargetResponse,
+    CreateProductAdResponse,
+    CreateTargetResponse,
     DownloadedFile,
     DownloadExportResponse,
     EnableToolGroupResponse,
@@ -38,9 +45,17 @@ from ..models.builtin_responses import (
     GetProfileResponse,
     GetRegionResponse,
     GetSessionStateResponse,
+    ListAdGroupsResponse,
+    ListCampaignsResponse,
     ListDownloadsResponse,
+    ListKeywordsResponse,
+    ListNegativeKeywordsResponse,
+    ListNegativeTargetsResponse,
+    ListPortfoliosResponse,
+    ListProductAdsResponse,
     ListReportFieldsResponse,
     ListRegionsResponse,
+    ListTargetsResponse,
     ProfileSelectorResponse,
     ProfilePageResponse,
     ProfileCacheRefreshResponse,
@@ -54,7 +69,15 @@ from ..models.builtin_responses import (
     SetRegionResponse,
     ToolGroupInfo,
     ToolGroupsResponse,
+    UpdateAdGroupResponse,
+    UpdateCampaignResponse,
+    UpdateKeywordResponse,
+    UpdateNegativeKeywordResponse,
+    UpdateNegativeTargetResponse,
+    UpdateProductAdResponse,
+    UpdateTargetResponse,
 )
+from ..tools import campaign_management
 from ..tools import identity, profile, profile_listing
 from ..tools import report_fields
 from ..tools import region as region_module
@@ -1295,6 +1318,488 @@ async def register_sampling_tools(server: FastMCP):
             )
 
 
+async def register_campaign_management_tools(server: FastMCP):
+    """Register campaign management (write) tools.
+
+    :param server: FastMCP server instance
+    """
+
+    @server.tool(
+        name="update_sp_campaigns",
+        description="Update a Sponsored Products campaign (rename, change budget, pause/enable/archive)",
+    )
+    async def update_sp_campaigns_tool(
+        ctx: Context,
+        campaign_id: str,
+        name: Optional[str] = None,
+        state: Optional[str] = None,
+        budget_amount: Optional[float] = None,
+        budget_type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> UpdateCampaignResponse:
+        result = await campaign_management.update_sp_campaigns(
+            campaign_id=campaign_id,
+            name=name,
+            state=state,
+            budget_amount=budget_amount,
+            budget_type=budget_type,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return UpdateCampaignResponse(**result)
+
+    @server.tool(
+        name="update_sb_campaigns",
+        description="Update a Sponsored Brands campaign (rename, change budget, pause/enable/archive)",
+    )
+    async def update_sb_campaigns_tool(
+        ctx: Context,
+        campaign_id: str,
+        name: Optional[str] = None,
+        state: Optional[str] = None,
+        budget_amount: Optional[float] = None,
+        budget_type: Optional[str] = None,
+    ) -> UpdateCampaignResponse:
+        result = await campaign_management.update_sb_campaigns(
+            campaign_id=campaign_id,
+            name=name,
+            state=state,
+            budget_amount=budget_amount,
+            budget_type=budget_type,
+        )
+        return UpdateCampaignResponse(**result)
+
+    @server.tool(
+        name="update_sp_ad_groups",
+        description="Update a Sponsored Products ad group (rename, change default bid, pause/enable/archive)",
+    )
+    async def update_sp_ad_groups_tool(
+        ctx: Context,
+        ad_group_id: str,
+        name: Optional[str] = None,
+        state: Optional[str] = None,
+        default_bid: Optional[float] = None,
+    ) -> UpdateAdGroupResponse:
+        result = await campaign_management.update_sp_ad_groups(
+            ad_group_id=ad_group_id,
+            name=name,
+            state=state,
+            default_bid=default_bid,
+        )
+        return UpdateAdGroupResponse(**result)
+
+    @server.tool(
+        name="update_sp_keywords",
+        description="Update a Sponsored Products keyword (change bid, pause/enable/archive)",
+    )
+    async def update_sp_keywords_tool(
+        ctx: Context,
+        keyword_id: str,
+        state: Optional[str] = None,
+        bid: Optional[float] = None,
+    ) -> UpdateKeywordResponse:
+        result = await campaign_management.update_sp_keywords(
+            keyword_id=keyword_id,
+            state=state,
+            bid=bid,
+        )
+        return UpdateKeywordResponse(**result)
+
+    @server.tool(
+        name="update_sp_product_ads",
+        description="Update a Sponsored Products product ad state (pause/enable/archive)",
+    )
+    async def update_sp_product_ads_tool(
+        ctx: Context,
+        ad_id: str,
+        state: Optional[str] = None,
+    ) -> UpdateProductAdResponse:
+        result = await campaign_management.update_sp_product_ads(
+            ad_id=ad_id,
+            state=state,
+        )
+        return UpdateProductAdResponse(**result)
+
+    @server.tool(
+        name="list_sp_ad_groups",
+        description="List Sponsored Products ad groups, optionally filtered by campaign ID and state",
+    )
+    async def list_sp_ad_groups_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListAdGroupsResponse:
+        result = await campaign_management.list_sp_ad_groups(
+            campaign_id=campaign_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListAdGroupsResponse(**result)
+
+    @server.tool(
+        name="list_sp_keywords",
+        description="List Sponsored Products keywords, optionally filtered by campaign/ad group and state",
+    )
+    async def list_sp_keywords_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        ad_group_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListKeywordsResponse:
+        result = await campaign_management.list_sp_keywords(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListKeywordsResponse(**result)
+
+    @server.tool(
+        name="create_sp_campaign",
+        description="Create a new Sponsored Products campaign",
+    )
+    async def create_sp_campaign_tool(
+        ctx: Context,
+        name: str,
+        targeting_type: str,
+        budget_amount: float,
+        state: str = "ENABLED",
+        portfolio_id: Optional[str] = None,
+        bidding_strategy: str = "LEGACY_FOR_SALES",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> CreateCampaignResponse:
+        result = await campaign_management.create_sp_campaign(
+            name=name,
+            targeting_type=targeting_type,
+            budget_amount=budget_amount,
+            state=state,
+            portfolio_id=portfolio_id,
+            bidding_strategy=bidding_strategy,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return CreateCampaignResponse(**result)
+
+    @server.tool(
+        name="create_sp_ad_group",
+        description="Create a new Sponsored Products ad group",
+    )
+    async def create_sp_ad_group_tool(
+        ctx: Context,
+        campaign_id: str,
+        name: str,
+        default_bid: float,
+        state: str = "ENABLED",
+    ) -> CreateAdGroupResponse:
+        result = await campaign_management.create_sp_ad_group(
+            campaign_id=campaign_id,
+            name=name,
+            default_bid=default_bid,
+            state=state,
+        )
+        return CreateAdGroupResponse(**result)
+
+    @server.tool(
+        name="create_sp_keyword",
+        description="Create a new Sponsored Products keyword",
+    )
+    async def create_sp_keyword_tool(
+        ctx: Context,
+        campaign_id: str,
+        ad_group_id: str,
+        keyword_text: str,
+        match_type: str,
+        bid: float,
+        state: str = "ENABLED",
+    ) -> CreateKeywordResponse:
+        result = await campaign_management.create_sp_keyword(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            keyword_text=keyword_text,
+            match_type=match_type,
+            bid=bid,
+            state=state,
+        )
+        return CreateKeywordResponse(**result)
+
+    @server.tool(
+        name="create_sp_product_ad",
+        description="Create a new Sponsored Products product ad. Seller accounts must pass sku; vendor accounts must pass asin.",
+    )
+    async def create_sp_product_ad_tool(
+        ctx: Context,
+        campaign_id: str,
+        ad_group_id: str,
+        asin: Optional[str] = None,
+        sku: Optional[str] = None,
+        state: str = "ENABLED",
+    ) -> CreateProductAdResponse:
+        result = await campaign_management.create_sp_product_ad(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            asin=asin,
+            sku=sku,
+            state=state,
+        )
+        return CreateProductAdResponse(**result)
+
+    @server.tool(
+        name="list_sp_campaigns",
+        description="List Sponsored Products campaigns, optionally filtered by name, state, or portfolio",
+    )
+    async def list_sp_campaigns_tool(
+        ctx: Context,
+        name_filter: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        portfolio_id_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListCampaignsResponse:
+        result = await campaign_management.list_sp_campaigns(
+            name_filter=name_filter,
+            state_filter=state_filter,
+            portfolio_id_filter=portfolio_id_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListCampaignsResponse(**result)
+
+    @server.tool(
+        name="list_sp_product_ads",
+        description="List Sponsored Products product ads, optionally filtered by campaign/ad group and state",
+    )
+    async def list_sp_product_ads_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        ad_group_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListProductAdsResponse:
+        result = await campaign_management.list_sp_product_ads(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListProductAdsResponse(**result)
+
+    # -----------------------------------------------------------------------
+    # Portfolios
+    # -----------------------------------------------------------------------
+
+    @server.tool(
+        name="list_sp_portfolios",
+        description="List Sponsored Products portfolios for the active profile, optionally filtered by name or portfolio ID",
+    )
+    async def list_sp_portfolios_tool(
+        ctx: Context,
+        name_filter: Optional[str] = None,
+        portfolio_id_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListPortfoliosResponse:
+        result = await campaign_management.list_sp_portfolios(
+            name_filter=name_filter,
+            portfolio_id_filter=portfolio_id_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListPortfoliosResponse(**result)
+
+    # -----------------------------------------------------------------------
+    # Campaign Negative Keywords
+    # -----------------------------------------------------------------------
+
+    @server.tool(
+        name="create_sp_negative_keyword",
+        description="Create a campaign-level negative keyword for Sponsored Products (match_type: NEGATIVE_EXACT or NEGATIVE_PHRASE)",
+    )
+    async def create_sp_negative_keyword_tool(
+        ctx: Context,
+        campaign_id: str,
+        keyword_text: str,
+        match_type: str,
+        state: str = "ENABLED",
+    ) -> CreateNegativeKeywordResponse:
+        result = await campaign_management.create_sp_negative_keyword(
+            campaign_id=campaign_id,
+            keyword_text=keyword_text,
+            match_type=match_type,
+            state=state,
+        )
+        return CreateNegativeKeywordResponse(**result)
+
+    @server.tool(
+        name="list_sp_negative_keywords",
+        description="List campaign-level Sponsored Products negative keywords, optionally filtered by campaign ID and state",
+    )
+    async def list_sp_negative_keywords_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListNegativeKeywordsResponse:
+        result = await campaign_management.list_sp_negative_keywords(
+            campaign_id=campaign_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListNegativeKeywordsResponse(**result)
+
+    @server.tool(
+        name="update_sp_negative_keywords",
+        description="Update a campaign-level Sponsored Products negative keyword (state only: pause/enable/archive)",
+    )
+    async def update_sp_negative_keywords_tool(
+        ctx: Context,
+        keyword_id: str,
+        state: Optional[str] = None,
+    ) -> UpdateNegativeKeywordResponse:
+        result = await campaign_management.update_sp_negative_keywords(
+            keyword_id=keyword_id,
+            state=state,
+        )
+        return UpdateNegativeKeywordResponse(**result)
+
+    # -----------------------------------------------------------------------
+    # Targeting clauses (targets) — manual PT + auto targeting expressions
+    # -----------------------------------------------------------------------
+
+    @server.tool(
+        name="create_sp_target",
+        description="Create a Sponsored Products product target. Pass target_asin for ASIN targeting, or expression for full control (categories, refinements).",
+    )
+    async def create_sp_target_tool(
+        ctx: Context,
+        campaign_id: str,
+        ad_group_id: str,
+        bid: float,
+        target_asin: Optional[str] = None,
+        expression: Optional[List[Dict[str, str]]] = None,
+        expression_type: str = "MANUAL",
+        state: str = "ENABLED",
+    ) -> CreateTargetResponse:
+        result = await campaign_management.create_sp_target(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            bid=bid,
+            target_asin=target_asin,
+            expression=expression,
+            expression_type=expression_type,
+            state=state,
+        )
+        return CreateTargetResponse(**result)
+
+    @server.tool(
+        name="list_sp_targets",
+        description="List Sponsored Products targeting clauses. Works for both manual PT targets (ASIN/category) and auto-campaign targeting expressions (close-match/loose-match/substitutes/complements).",
+    )
+    async def list_sp_targets_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        ad_group_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListTargetsResponse:
+        result = await campaign_management.list_sp_targets(
+            campaign_id=campaign_id,
+            ad_group_id=ad_group_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListTargetsResponse(**result)
+
+    @server.tool(
+        name="update_sp_targets",
+        description="Update a Sponsored Products target (change bid or state). Also works on auto-campaign targeting expressions.",
+    )
+    async def update_sp_targets_tool(
+        ctx: Context,
+        target_id: str,
+        bid: Optional[float] = None,
+        state: Optional[str] = None,
+    ) -> UpdateTargetResponse:
+        result = await campaign_management.update_sp_targets(
+            target_id=target_id,
+            bid=bid,
+            state=state,
+        )
+        return UpdateTargetResponse(**result)
+
+    # -----------------------------------------------------------------------
+    # Campaign Negative Targets (AUTO campaigns only)
+    # -----------------------------------------------------------------------
+
+    @server.tool(
+        name="create_sp_negative_target",
+        description="Create a campaign-level negative product target on an AUTO campaign. Pass negative_asin for ASIN blocking.",
+    )
+    async def create_sp_negative_target_tool(
+        ctx: Context,
+        campaign_id: str,
+        negative_asin: Optional[str] = None,
+        expression: Optional[List[Dict[str, str]]] = None,
+        state: str = "ENABLED",
+    ) -> CreateNegativeTargetResponse:
+        result = await campaign_management.create_sp_negative_target(
+            campaign_id=campaign_id,
+            negative_asin=negative_asin,
+            expression=expression,
+            state=state,
+        )
+        return CreateNegativeTargetResponse(**result)
+
+    @server.tool(
+        name="list_sp_negative_targets",
+        description="List campaign-level Sponsored Products negative targets",
+    )
+    async def list_sp_negative_targets_tool(
+        ctx: Context,
+        campaign_id: Optional[str] = None,
+        state_filter: Optional[str] = None,
+        max_results: int = 100,
+        next_token: Optional[str] = None,
+    ) -> ListNegativeTargetsResponse:
+        result = await campaign_management.list_sp_negative_targets(
+            campaign_id=campaign_id,
+            state_filter=state_filter,
+            max_results=max_results,
+            next_token=next_token,
+        )
+        return ListNegativeTargetsResponse(**result)
+
+    @server.tool(
+        name="update_sp_negative_targets",
+        description="Update a campaign-level Sponsored Products negative target (state only: pause/enable/archive)",
+    )
+    async def update_sp_negative_targets_tool(
+        ctx: Context,
+        target_id: str,
+        state: Optional[str] = None,
+    ) -> UpdateNegativeTargetResponse:
+        result = await campaign_management.update_sp_negative_targets(
+            target_id=target_id,
+            state=state,
+        )
+        return UpdateNegativeTargetResponse(**result)
+
+    logger.info("Registered campaign management tools (23 tools)")
+
+
 async def register_oauth_tools_builtin(server: FastMCP):
     """Register OAuth authentication tools.
 
@@ -1478,6 +1983,7 @@ async def register_all_builtin_tools(
     # Routing tools removed - override functionality was redundant
     await register_download_tools(server)
     await register_report_catalog_tools(server)
+    await register_campaign_management_tools(server)
     await register_sampling_tools(server)
     # Cache & diagnostic tools removed - not core operations
 
