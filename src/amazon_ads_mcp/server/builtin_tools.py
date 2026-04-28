@@ -1343,7 +1343,13 @@ async def register_campaign_management_tools(server: FastMCP):
 
     @server.tool(
         name="update_sp_campaigns",
-        description="Update a Sponsored Products campaign (rename, change budget, pause/enable/archive)",
+        description=(
+            "Update a Sponsored Products campaign (rename, change budget, "
+            "pause/enable/archive, set placement bid adjustments, set bidding strategy). "
+            "Placement adjustments (placement_top_pct, placement_product_page_pct, "
+            "placement_rest_of_search_pct) are merged: omitted placements retain their "
+            "current value. Each percentage must be 0-900."
+        ),
     )
     async def update_sp_campaigns_tool(
         ctx: Context,
@@ -1354,6 +1360,10 @@ async def register_campaign_management_tools(server: FastMCP):
         budget_type: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        placement_top_pct: Optional[int] = None,
+        placement_product_page_pct: Optional[int] = None,
+        placement_rest_of_search_pct: Optional[int] = None,
+        bidding_strategy: Optional[str] = None,
     ) -> UpdateCampaignResponse:
         _require_active_profile()
         result = await campaign_management.update_sp_campaigns(
@@ -1364,6 +1374,10 @@ async def register_campaign_management_tools(server: FastMCP):
             budget_type=budget_type,
             start_date=start_date,
             end_date=end_date,
+            placement_top_pct=placement_top_pct,
+            placement_product_page_pct=placement_product_page_pct,
+            placement_rest_of_search_pct=placement_rest_of_search_pct,
+            bidding_strategy=bidding_strategy,
         )
         return UpdateCampaignResponse(**result)
 

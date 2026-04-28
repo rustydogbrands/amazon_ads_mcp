@@ -34,6 +34,10 @@ async def update_sp_campaigns(
     budget_type: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    placement_top_pct: Optional[int] = None,
+    placement_product_page_pct: Optional[int] = None,
+    placement_rest_of_search_pct: Optional[int] = None,
+    bidding_strategy: Optional[str] = None,
 ) -> dict:
     """Update one Sponsored Products campaign.
 
@@ -44,8 +48,77 @@ async def update_sp_campaigns(
     :param budget_type: Budget type (DAILY)
     :param start_date: Start date YYYYMMDD
     :param end_date: End date YYYYMMDD
+    :param placement_top_pct: Top of Search placement bid adjustment (0-900)
+    :param placement_product_page_pct: Product Page placement bid adjustment (0-900)
+    :param placement_rest_of_search_pct: Rest of Search placement bid adjustment (0-900)
+    :param bidding_strategy: Bidding strategy (LEGACY_FOR_SALES, AUTO_FOR_SALES, MANUAL, RULE_BASED)
+
+    Placement adjustments are merged: any placement not specified retains its
+    current value, requiring a read-modify-write. The Amazon Ads v3 PUT
+    /sp/campaigns endpoint replaces the dynamicBidding object wholesale, so
+    omitting unchanged placements would silently zero them out.
     """
     from ..utils.http_client import get_authenticated_client
+
+    bidding_fields_set = (
+        placement_top_pct is not None
+        or placement_product_page_pct is not None
+        or placement_rest_of_search_pct is not None
+        or bidding_strategy is not None
+    )
+
+    for label, value in (
+        ("placement_top_pct", placement_top_pct),
+        ("placement_product_page_pct", placement_product_page_pct),
+        ("placement_rest_of_search_pct", placement_rest_of_search_pct),
+    ):
+        if value is not None and (value < 0 or value > 900):
+            return {
+                "success": False,
+                "campaign_id": campaign_id,
+                "error": f"Invalid {label}: {value} (must be 0-900)",
+                "message": f"Invalid placement bidding value for {label}",
+            }
+
+    client = await get_authenticated_client()
+    headers = {
+        "Accept": "application/vnd.spcampaign.v3+json",
+        "Content-Type": "application/vnd.spcampaign.v3+json",
+    }
+
+    current_placement: Dict[str, int] = {}
+    current_strategy: Optional[str] = None
+    if bidding_fields_set:
+        list_resp = await client.post(
+            "/sp/campaigns/list",
+            json={
+                "campaignIdFilter": {"include": [campaign_id]},
+                "maxResults": 1,
+            },
+            headers=headers,
+        )
+        if list_resp.status_code != 200:
+            return {
+                "success": False,
+                "campaign_id": campaign_id,
+                "error": f"HTTP {list_resp.status_code}: {list_resp.text[:300]}",
+                "message": "Pre-fetch for placement merge failed",
+            }
+        campaigns = list_resp.json().get("campaigns", [])
+        if not campaigns:
+            return {
+                "success": False,
+                "campaign_id": campaign_id,
+                "error": "Campaign not found",
+                "message": "Pre-fetch for placement merge returned no campaign",
+            }
+        dynamic = campaigns[0].get("dynamicBidding") or {}
+        current_strategy = dynamic.get("strategy")
+        for entry in dynamic.get("placementBidding") or []:
+            placement = entry.get("placement")
+            pct = entry.get("percentage")
+            if placement and pct is not None:
+                current_placement[placement] = int(pct)
 
     campaign = {"campaignId": campaign_id}
     if name is not None:
@@ -66,11 +139,31 @@ async def update_sp_campaigns(
     if end_date is not None:
         campaign["endDate"] = end_date
 
-    client = await get_authenticated_client()
-    headers = {
-        "Accept": "application/vnd.spcampaign.v3+json",
-        "Content-Type": "application/vnd.spcampaign.v3+json",
-    }
+    if bidding_fields_set:
+        dynamic_payload: Dict[str, Any] = {}
+        effective_strategy = (
+            bidding_strategy if bidding_strategy is not None else current_strategy
+        )
+        if effective_strategy:
+            dynamic_payload["strategy"] = effective_strategy.upper()
+
+        merged_placement = dict(current_placement)
+        if placement_top_pct is not None:
+            merged_placement["PLACEMENT_TOP"] = int(placement_top_pct)
+        if placement_product_page_pct is not None:
+            merged_placement["PLACEMENT_PRODUCT_PAGE"] = int(placement_product_page_pct)
+        if placement_rest_of_search_pct is not None:
+            merged_placement["PLACEMENT_REST_OF_SEARCH"] = int(placement_rest_of_search_pct)
+
+        if merged_placement:
+            dynamic_payload["placementBidding"] = [
+                {"placement": p, "percentage": v}
+                for p, v in sorted(merged_placement.items())
+            ]
+
+        if dynamic_payload:
+            campaign["dynamicBidding"] = dynamic_payload
+
     resp = await client.put(
         "/sp/campaigns",
         json={"campaigns": [campaign]},
