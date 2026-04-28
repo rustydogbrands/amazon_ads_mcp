@@ -338,3 +338,8 @@ profile_output/
 # MCP Registry tokens
 .mcpregistry_*
 dfg.txt
+
+# Local pre-flight stash — batch operation receipts (campaign IDs, target
+# lists). Per the 6AM batch-preview lesson: stashed locally before any live
+# mutation so reversal is a file read, not an API re-query. Never committed.
+.batch-stash/
