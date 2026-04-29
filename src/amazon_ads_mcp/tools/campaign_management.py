@@ -913,6 +913,7 @@ async def list_sp_campaigns(
     portfolio_id_filter: Optional[str] = None,
     max_results: int = 100,
     next_token: Optional[str] = None,
+    include_extended_data: bool = False,
 ) -> dict:
     """List Sponsored Products campaigns with optional filters.
 
@@ -921,6 +922,11 @@ async def list_sp_campaigns(
     :param portfolio_id_filter: Filter by portfolio ID
     :param max_results: Max results per page (default 100)
     :param next_token: Pagination token from previous response
+    :param include_extended_data: Request extendedData fields. Surfaces
+        servingStatus (delivery health — CAMPAIGN_OUT_OF_BUDGET, etc.),
+        servingStatusDetails (human-readable reasons), creationDateTime,
+        and lastUpdateDateTime on each item. Slightly slower upstream; off
+        by default.
     """
     from ..utils.http_client import get_authenticated_client
 
@@ -934,6 +940,8 @@ async def list_sp_campaigns(
         body["nameFilter"] = {"queryTermMatchType": "BROAD_MATCH", "include": [name_filter]}
     if portfolio_id_filter:
         body["portfolioIdFilter"] = {"include": [portfolio_id_filter]}
+    if include_extended_data:
+        body["includeExtendedDataFields"] = True
 
     client = await get_authenticated_client()
     headers = {
@@ -957,6 +965,7 @@ async def list_sp_campaigns(
                 p.get("placement"): p.get("percentage")
                 for p in (dynamic.get("placementBidding") or [])
             }
+            extended = c.get("extendedData") or {}
             items.append({
                 "campaign_id": c.get("campaignId"),
                 "name": c.get("name"),
@@ -970,6 +979,10 @@ async def list_sp_campaigns(
                 "placement_top_pct": placement_map.get("PLACEMENT_TOP", 0),
                 "placement_product_page_pct": placement_map.get("PLACEMENT_PRODUCT_PAGE", 0),
                 "placement_rest_of_search_pct": placement_map.get("PLACEMENT_REST_OF_SEARCH", 0),
+                "serving_status": extended.get("servingStatus"),
+                "serving_status_details": extended.get("servingStatusDetails"),
+                "creation_date_time": extended.get("creationDateTime"),
+                "last_update_date_time": extended.get("lastUpdateDateTime"),
             })
         return {
             "success": True,

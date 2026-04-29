@@ -1595,7 +1595,12 @@ async def register_campaign_management_tools(server: FastMCP):
 
     @server.tool(
         name="list_sp_campaigns",
-        description="List Sponsored Products campaigns, optionally filtered by name, state, or portfolio",
+        description=(
+            "List Sponsored Products campaigns, optionally filtered by name, state, or portfolio. "
+            "Pass include_extended_data=true to surface serving_status (e.g. CAMPAIGN_OUT_OF_BUDGET, "
+            "CAMPAIGN_STATUS_ENABLED), serving_status_details, creation_date_time, and "
+            "last_update_date_time on each item. Off by default to keep responses small."
+        ),
     )
     async def list_sp_campaigns_tool(
         ctx: Context,
@@ -1604,6 +1609,7 @@ async def register_campaign_management_tools(server: FastMCP):
         portfolio_id_filter: Optional[str] = None,
         max_results: int = 100,
         next_token: Optional[str] = None,
+        include_extended_data: bool = False,
     ) -> ListCampaignsResponse:
         _require_active_profile()
         result = await campaign_management.list_sp_campaigns(
@@ -1612,6 +1618,7 @@ async def register_campaign_management_tools(server: FastMCP):
             portfolio_id_filter=portfolio_id_filter,
             max_results=max_results,
             next_token=next_token,
+            include_extended_data=include_extended_data,
         )
         return ListCampaignsResponse(**result)
 
