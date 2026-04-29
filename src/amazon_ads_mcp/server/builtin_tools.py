@@ -1597,9 +1597,13 @@ async def register_campaign_management_tools(server: FastMCP):
         name="list_sp_campaigns",
         description=(
             "List Sponsored Products campaigns, optionally filtered by name, state, or portfolio. "
-            "Pass include_extended_data=true to surface serving_status (e.g. CAMPAIGN_OUT_OF_BUDGET, "
-            "CAMPAIGN_STATUS_ENABLED), serving_status_details, creation_date_time, and "
-            "last_update_date_time on each item. Off by default to keep responses small."
+            "Pass include_extended_data=true to return campaign serving status (e.g. "
+            "CAMPAIGN_OUT_OF_BUDGET, CAMPAIGN_STATUS_ENABLED, ENDED, CAMPAIGN_PAUSED, "
+            "CAMPAIGN_ARCHIVED, ADVERTISER_OUT_OF_BUDGET, PORTFOLIO_OUT_OF_BUDGET) via "
+            "extendedData.servingStatus. Each item also gets flattened convenience keys "
+            "(serving_status, serving_status_details, creation_date_time, "
+            "last_update_date_time) and a full extended_data passthrough so future fields "
+            "Amazon adds are never silently dropped. Off by default to keep responses small."
         ),
     )
     async def list_sp_campaigns_tool(

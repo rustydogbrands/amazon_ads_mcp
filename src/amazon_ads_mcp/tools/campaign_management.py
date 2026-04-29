@@ -965,7 +965,8 @@ async def list_sp_campaigns(
                 p.get("placement"): p.get("percentage")
                 for p in (dynamic.get("placementBidding") or [])
             }
-            extended = c.get("extendedData") or {}
+            extended_raw = c.get("extendedData")
+            extended = extended_raw or {}
             items.append({
                 "campaign_id": c.get("campaignId"),
                 "name": c.get("name"),
@@ -983,6 +984,9 @@ async def list_sp_campaigns(
                 "serving_status_details": extended.get("servingStatusDetails"),
                 "creation_date_time": extended.get("creationDateTime"),
                 "last_update_date_time": extended.get("lastUpdateDateTime"),
+                # Lossless passthrough: any extendedData field the API
+                # returns lives here, even ones not yet flattened above.
+                "extended_data": extended_raw,
             })
         return {
             "success": True,
