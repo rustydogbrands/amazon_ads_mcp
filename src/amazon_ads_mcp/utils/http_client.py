@@ -62,6 +62,57 @@ async def get_authenticated_client() -> "AuthenticatedClient":
     return _authenticated_client
 
 
+async def bootstrap_standalone_client() -> "AuthenticatedClient":
+    """Create and register an AuthenticatedClient outside the MCP server flow.
+
+    Mirrors the minimum subset of ``ServerBuilder._setup_http_client`` so
+    standalone CLI scripts (e.g. the negation-batch runner) can reach
+    Amazon Ads API without booting the full MCP server. Idempotent:
+    returns the existing singleton if one has already been registered.
+
+    :return: The registered AuthenticatedClient instance
+    :rtype: AuthenticatedClient
+    """
+    global _authenticated_client
+    if _authenticated_client is not None:
+        return _authenticated_client
+
+    from ..auth.manager import get_auth_manager
+    from ..config.settings import settings
+    from .header_resolver import HeaderNameResolver
+    from .media import MediaTypeRegistry
+    from .region_config import RegionConfig
+
+    auth_mgr = get_auth_manager()
+
+    # Match ServerBuilder._setup_default_identity: activate the configured
+    # default identity so AuthManager.get_headers() resolves at call time.
+    default_id = getattr(auth_mgr, "_default_identity_id", None)
+    if default_id:
+        try:
+            await auth_mgr.set_active_identity(default_id)
+        except Exception as e:
+            logger.warning(
+                "Standalone bootstrap: default identity activation failed: %s", e
+            )
+
+    region = settings.amazon_ads_region
+    provider = getattr(auth_mgr, "provider", None)
+    if provider is not None and getattr(provider, "provider_type", None) == "openbridge":
+        region = "na"
+    base_url = RegionConfig.get_api_endpoint(region)
+
+    client = AuthenticatedClient(
+        auth_manager=auth_mgr,
+        media_registry=MediaTypeRegistry(),
+        header_resolver=HeaderNameResolver(),
+        base_url=base_url,
+        timeout=httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0),
+    )
+    set_authenticated_client(client)
+    return client
+
+
 # Context-local routing overrides/state to avoid cross-request leakage
 _REGION_OVERRIDE_VAR: ContextVar[Optional[str]] = ContextVar(
     "amazon_ads_region_override", default=None

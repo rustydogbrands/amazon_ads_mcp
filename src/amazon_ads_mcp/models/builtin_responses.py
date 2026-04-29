@@ -755,3 +755,363 @@ ReportFieldsResponse = Annotated[
     Union[QueryReportFieldsResponse, ValidateReportFieldsResponse],
     Field(discriminator="mode"),
 ]
+
+
+# ============================================================================
+# Campaign Management Tool Responses
+# ============================================================================
+
+
+class UpdateCampaignResponse(BaseModel):
+    """Response from update_sp_campaigns / update_sb_campaigns tools.
+
+    :param success: Whether the update succeeded
+    :param campaign_id: Campaign ID that was updated
+    :param message: Human-readable status message
+    :param updated_fields: Fields that were changed
+    :param details: Raw API response details
+    :param error: Error details if failed
+    """
+
+    success: bool
+    campaign_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateAdGroupResponse(BaseModel):
+    """Response from update_sp_ad_groups tool.
+
+    :param success: Whether the update succeeded
+    :param ad_group_id: Ad group ID that was updated
+    :param message: Human-readable status message
+    :param updated_fields: Fields that were changed
+    :param details: Raw API response details
+    :param error: Error details if failed
+    """
+
+    success: bool
+    ad_group_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateKeywordResponse(BaseModel):
+    """Response from update_sp_keywords tool.
+
+    :param success: Whether the update succeeded
+    :param keyword_id: Keyword ID that was updated
+    :param message: Human-readable status message
+    :param updated_fields: Fields that were changed
+    :param details: Raw API response details
+    :param error: Error details if failed
+    """
+
+    success: bool
+    keyword_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateProductAdResponse(BaseModel):
+    """Response from update_sp_product_ads tool.
+
+    :param success: Whether the update succeeded
+    :param ad_id: Product ad ID that was updated
+    :param message: Human-readable status message
+    :param updated_fields: Fields that were changed
+    :param details: Raw API response details
+    :param error: Error details if failed
+    """
+
+    success: bool
+    ad_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class AdGroupItem(BaseModel):
+    """Single ad group in a list response.
+
+    :param ad_group_id: Ad group ID
+    :param name: Ad group name
+    :param campaign_id: Parent campaign ID
+    :param state: Current state
+    :param default_bid: Default bid amount
+    """
+
+    ad_group_id: Optional[str] = None
+    name: Optional[str] = None
+    campaign_id: Optional[str] = None
+    state: Optional[str] = None
+    default_bid: Optional[float] = None
+
+
+class ListAdGroupsResponse(BaseModel):
+    """Response from list_sp_ad_groups tool.
+
+    :param success: Whether the request succeeded
+    :param items: List of ad groups
+    :param count: Number of items returned
+    :param next_token: Pagination token for next page
+    :param error: Error message if failed
+    """
+
+    success: bool
+    items: List[AdGroupItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+class KeywordItem(BaseModel):
+    """Single keyword in a list response.
+
+    :param keyword_id: Keyword ID
+    :param keyword_text: The keyword text
+    :param match_type: Match type (BROAD, PHRASE, EXACT)
+    :param campaign_id: Parent campaign ID
+    :param ad_group_id: Parent ad group ID
+    :param state: Current state
+    :param bid: Current bid amount
+    """
+
+    keyword_id: Optional[str] = None
+    keyword_text: Optional[str] = None
+    match_type: Optional[str] = None
+    campaign_id: Optional[str] = None
+    ad_group_id: Optional[str] = None
+    state: Optional[str] = None
+    bid: Optional[float] = None
+
+
+class ListKeywordsResponse(BaseModel):
+    """Response from list_sp_keywords tool.
+
+    :param success: Whether the request succeeded
+    :param items: List of keywords
+    :param count: Number of items returned
+    :param next_token: Pagination token for next page
+    :param error: Error message if failed
+    """
+
+    success: bool
+    items: List[KeywordItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+class CreateCampaignResponse(BaseModel):
+    success: bool
+    campaign_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class CreateAdGroupResponse(BaseModel):
+    success: bool
+    ad_group_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class CreateKeywordResponse(BaseModel):
+    success: bool
+    keyword_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class CreateProductAdResponse(BaseModel):
+    success: bool
+    ad_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class CampaignItem(BaseModel):
+    campaign_id: Optional[str] = None
+    name: Optional[str] = None
+    state: Optional[str] = None
+    targeting_type: Optional[str] = None
+    budget_amount: Optional[float] = None
+    budget_type: Optional[str] = None
+    portfolio_id: Optional[str] = None
+    start_date: Optional[str] = None
+    bidding_strategy: Optional[str] = None
+    placement_top_pct: Optional[float] = 0
+    placement_product_page_pct: Optional[float] = 0
+    placement_rest_of_search_pct: Optional[float] = 0
+
+
+class ListCampaignsResponse(BaseModel):
+    success: bool
+    items: List[CampaignItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+class ProductAdItem(BaseModel):
+    ad_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    ad_group_id: Optional[str] = None
+    asin: Optional[str] = None
+    state: Optional[str] = None
+
+
+class ListProductAdsResponse(BaseModel):
+    success: bool
+    items: List[ProductAdItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Portfolios
+# ---------------------------------------------------------------------------
+
+class PortfolioItem(BaseModel):
+    portfolio_id: Optional[str] = None
+    name: Optional[str] = None
+    state: Optional[str] = None
+    in_budget: Optional[bool] = None
+    budget_policy: Optional[str] = None
+    budget_currency: Optional[str] = None
+
+
+class ListPortfoliosResponse(BaseModel):
+    success: bool
+    items: List[PortfolioItem] = Field(default_factory=list)
+    count: int = 0
+    total_results: Optional[int] = None
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Campaign negative keywords
+# ---------------------------------------------------------------------------
+
+class CreateNegativeKeywordResponse(BaseModel):
+    success: bool
+    keyword_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateNegativeKeywordResponse(BaseModel):
+    success: bool
+    keyword_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class NegativeKeywordItem(BaseModel):
+    keyword_id: Optional[str] = None
+    keyword_text: Optional[str] = None
+    match_type: Optional[str] = None
+    campaign_id: Optional[str] = None
+    state: Optional[str] = None
+
+
+class ListNegativeKeywordsResponse(BaseModel):
+    success: bool
+    items: List[NegativeKeywordItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Targeting clauses (targets)
+# ---------------------------------------------------------------------------
+
+class CreateTargetResponse(BaseModel):
+    success: bool
+    target_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateTargetResponse(BaseModel):
+    success: bool
+    target_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class TargetItem(BaseModel):
+    target_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    ad_group_id: Optional[str] = None
+    expression: Optional[List[Dict[str, Any]]] = None
+    resolved_expression: Optional[List[Dict[str, Any]]] = None
+    expression_type: Optional[str] = None
+    state: Optional[str] = None
+    bid: Optional[float] = None
+
+
+class ListTargetsResponse(BaseModel):
+    success: bool
+    items: List[TargetItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Campaign negative targets
+# ---------------------------------------------------------------------------
+
+class CreateNegativeTargetResponse(BaseModel):
+    success: bool
+    target_id: Optional[str] = None
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class UpdateNegativeTargetResponse(BaseModel):
+    success: bool
+    target_id: str
+    message: str
+    updated_fields: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
+    error: Optional[Any] = None
+
+
+class NegativeTargetItem(BaseModel):
+    target_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    expression: Optional[List[Dict[str, Any]]] = None
+    resolved_expression: Optional[List[Dict[str, Any]]] = None
+    state: Optional[str] = None
+
+
+class ListNegativeTargetsResponse(BaseModel):
+    success: bool
+    items: List[NegativeTargetItem] = Field(default_factory=list)
+    count: int = 0
+    next_token: Optional[str] = None
+    error: Optional[str] = None
