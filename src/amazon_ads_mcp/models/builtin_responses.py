@@ -962,6 +962,12 @@ class CampaignItem(BaseModel):
     serving_status_details: Optional[List[Dict[str, Any]]] = None
     creation_date_time: Optional[str] = None
     last_update_date_time: Optional[str] = None
+    # Full extendedData object as returned by the API. Lossless passthrough
+    # so future fields Amazon adds aren't silently dropped — the flattened
+    # convenience keys above are duplicated from this blob. None when
+    # include_extended_data was not requested or the API returned no
+    # extendedData on the campaign.
+    extended_data: Optional[Dict[str, Any]] = None
 
 
 class ListCampaignsResponse(BaseModel):

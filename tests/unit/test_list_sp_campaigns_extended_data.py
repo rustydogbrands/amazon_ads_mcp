@@ -113,6 +113,43 @@ async def test_no_extended_data_yields_none_for_extended_fields(monkeypatch):
     assert item["serving_status_details"] is None
     assert item["creation_date_time"] is None
     assert item["last_update_date_time"] is None
+    assert item["extended_data"] is None
     # Pre-existing fields still present
     assert item["campaign_id"] == "C2"
     assert item["state"] == "ENABLED"
+
+
+@pytest.mark.asyncio
+async def test_extended_data_passthrough_preserves_unknown_fields(monkeypatch):
+    """Future-proofing: any field the API adds under extendedData must
+    survive in the extended_data passthrough, not get silently dropped."""
+    payload = {
+        "campaigns": [
+            {
+                "campaignId": "C3",
+                "name": "Future-fields Campaign",
+                "state": "ENABLED",
+                "extendedData": {
+                    "servingStatus": "CAMPAIGN_STATUS_ENABLED",
+                    "creationDateTime": "2024-04-08T10:00:00Z",
+                    # Hypothetical new field Amazon could add tomorrow
+                    "deliveryHealthScore": 0.92,
+                    "lastBidEvaluationDateTime": "2026-04-28T22:00:00Z",
+                },
+            }
+        ]
+    }
+    client = MagicMock()
+    client.post = AsyncMock(return_value=_FakeResponse(200, payload))
+    _bind_client(monkeypatch, client)
+
+    result = await campaign_management.list_sp_campaigns(include_extended_data=True)
+
+    item = result["items"][0]
+    # Flattened convenience keys still populate
+    assert item["serving_status"] == "CAMPAIGN_STATUS_ENABLED"
+    assert item["creation_date_time"] == "2024-04-08T10:00:00Z"
+    # Full passthrough preserves everything, including unknown fields
+    assert item["extended_data"]["deliveryHealthScore"] == 0.92
+    assert item["extended_data"]["lastBidEvaluationDateTime"] == "2026-04-28T22:00:00Z"
+    assert item["extended_data"]["servingStatus"] == "CAMPAIGN_STATUS_ENABLED"
