@@ -955,6 +955,13 @@ class CampaignItem(BaseModel):
     placement_top_pct: Optional[float] = 0
     placement_product_page_pct: Optional[float] = 0
     placement_rest_of_search_pct: Optional[float] = 0
+    # Populated only when list_sp_campaigns is called with
+    # include_extended_data=True. servingStatus is the delivery health
+    # signal (e.g. CAMPAIGN_OUT_OF_BUDGET, CAMPAIGN_STATUS_ENABLED).
+    serving_status: Optional[str] = None
+    serving_status_details: Optional[List[Dict[str, Any]]] = None
+    creation_date_time: Optional[str] = None
+    last_update_date_time: Optional[str] = None
 
 
 class ListCampaignsResponse(BaseModel):
