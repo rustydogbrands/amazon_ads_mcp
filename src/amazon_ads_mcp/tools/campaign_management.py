@@ -22,6 +22,24 @@ def _asin_expression(asin: str) -> List[Dict[str, str]]:
     return [{"type": "ASIN_SAME_AS", "value": asin}]
 
 
+def _to_iso_date(value: Optional[str]) -> Optional[str]:
+    """Normalize a campaign date to Amazon Ads SP v3 ISO format (YYYY-MM-DD).
+
+    The SP v3 campaigns API rejects the legacy v2 ``YYYYMMDD`` form. Callers
+    (and LLMs working from older docs/muscle memory) still pass it, so
+    coerce the 8-digit form to ISO. ``None`` and already-ISO values pass
+    through untouched. Any other shape is returned unchanged so the API
+    surfaces its own validation error rather than this helper masking a
+    genuinely malformed value.
+    """
+    if value is None:
+        return None
+    s = str(value).strip()
+    if len(s) == 8 and s.isdigit():
+        return f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    return s
+
+
 # ---------------------------------------------------------------------------
 # SP Campaign updates
 # ---------------------------------------------------------------------------
@@ -47,8 +65,8 @@ async def update_sp_campaigns(
         endpoint rejects ARCHIVED — use archive_sp_campaign instead.
     :param budget_amount: New daily budget amount
     :param budget_type: Budget type (DAILY)
-    :param start_date: Start date YYYYMMDD
-    :param end_date: End date YYYYMMDD
+    :param start_date: Start date YYYY-MM-DD
+    :param end_date: End date YYYY-MM-DD
     :param placement_top_pct: Top of Search placement bid adjustment (0-900)
     :param placement_product_page_pct: Product Page placement bid adjustment (0-900)
     :param placement_rest_of_search_pct: Rest of Search placement bid adjustment (0-900)
@@ -847,15 +865,17 @@ async def create_sp_campaign(
     :param portfolio_id: Portfolio ID to assign to
     :param bidding_strategy: Bidding strategy (LEGACY_FOR_SALES = down only,
         AUTO_FOR_SALES = up and down, MANUAL = fixed)
-    :param start_date: Start date YYYYMMDD (defaults to today)
-    :param end_date: End date YYYYMMDD
+    :param start_date: Start date YYYY-MM-DD (defaults to today)
+    :param end_date: End date YYYY-MM-DD
     """
     from datetime import datetime
 
     from ..utils.http_client import get_authenticated_client
 
     if start_date is None:
-        start_date = datetime.now().strftime("%Y%m%d")
+        start_date = datetime.now().strftime("%Y-%m-%d")
+    else:
+        start_date = _to_iso_date(start_date)
 
     campaign: dict = {
         "name": name,
@@ -868,7 +888,7 @@ async def create_sp_campaign(
     if portfolio_id is not None:
         campaign["portfolioId"] = portfolio_id
     if end_date is not None:
-        campaign["endDate"] = end_date
+        campaign["endDate"] = _to_iso_date(end_date)
 
     client = await get_authenticated_client()
     headers = {
