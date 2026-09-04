@@ -79,6 +79,15 @@ have its own Amazon Ads presence.
   2b506a2) for the SP v3 normalization helper that should be imported by any
   script that does need to parse response types.
 
+## Fork CI — Release workflow is disabled
+- The inherited `Release` workflow (auto version bump + tag + GitHub Release +
+  PyPI publish) is **disabled** on `rustydogbrands/amazon_ads_mcp` as of
+  2026-09-04: PyPI Trusted Publishing for `amazon-ads-mcp` is registered to
+  upstream `KuudoAI/amazon_ads_mcp`, so every push to `main` here failed with
+  `invalid-publisher` — after already bumping the version, tagging, and pushing
+  a commit to `main`. Re-enable only if this fork ships its own renamed package.
+
 ---
 *Created 2026-05-05 during a Marketing weekly review session that surfaced the token-source split. Source: Rusty Dog Brands Cowork PPC pipeline.*
 *Updated 2026-09-03: corrected the PBN token scope to the verified six profiles (including SH US and SH MX) and added the cross-brand warning.*
+*Updated 2026-09-04: noted the disabled fork Release workflow (see "Fork CI").*
