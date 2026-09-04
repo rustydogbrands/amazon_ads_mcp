@@ -16,9 +16,11 @@ This file pins the third iteration of bug.md Issue 2:
     re-establishment rule, and a ``token_swapped`` subtlety note in
     their descriptions.
 
-  * The ``execute`` meta-tool description references
-    ``get_session_state`` as the probe and carries the same
-    one-sentence rule.
+  * The ``execute`` meta-tool description, and the descriptions of the
+    stateful tools registered in every auth configuration, reference
+    ``get_routing_state`` / ``get_active_profile`` as the probe —
+    ``get_session_state`` exists only under OpenBridge auth — and carry
+    the same one-sentence rule.
 
 Per design (verified with the client): we are NOT adding the three
 state fields to ``SetProfileResponse``, ``ClearProfileResponse``, or
@@ -341,12 +343,16 @@ async def test_get_session_state_description_calls_out_token_swap_subtlety():
 # ---------------------------------------------------------------------------
 
 
-def test_execute_description_references_get_session_state():
+def test_execute_description_references_available_probes():
     """Verification point #3: the execute meta-tool description must
-    point agents at ``get_session_state`` as the probe."""
+    point agents at a probe that exists in every auth configuration.
+    ``get_session_state`` is registered only under OpenBridge auth, so
+    the description names ``get_routing_state`` and
+    ``get_active_profile`` instead."""
     from amazon_ads_mcp.server.code_mode import EXECUTE_DESCRIPTION
 
-    assert "get_session_state" in EXECUTE_DESCRIPTION
+    assert "get_routing_state" in EXECUTE_DESCRIPTION
+    assert "get_active_profile" in EXECUTE_DESCRIPTION
 
 
 def test_execute_description_carries_the_rule():

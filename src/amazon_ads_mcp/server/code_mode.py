@@ -82,7 +82,9 @@ BUILTIN_TAG = "server-management"
 # Monty sandbox guardrails (verified by repro: `asyncio.sleep` raises
 # AttributeError, network/FS modules unavailable, print() output is client-
 # path dependent). Drift here will mislead callers — keep aligned with
-# `AuthBridgingSandboxProvider.run` and the integration tests.
+# `AuthBridgingSandboxProvider.run` and the integration tests. The probe
+# wording mirrors `builtin_tools._STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE`
+# — keep the two in sync.
 EXECUTE_DESCRIPTION = (
     "Run async Python in a sandboxed interpreter. The whole script runs as one\n"
     "turn; use `return` to produce the tool result.\n"
@@ -112,8 +114,11 @@ EXECUTE_DESCRIPTION = (
     "`set_active_profile` and they ride every subsequent `call_tool`.\n"
     "\n"
     "Session-scope contract:\n"
-    "- To detect the transport's scope, call `get_session_state` at the start\n"
-    "  of a block. It is a read-only probe with no side effects.\n"
+    "- To detect the transport's scope, call `get_routing_state` or\n"
+    "  `get_active_profile` at the start of a block. Both are read-only\n"
+    "  probes with no side effects, both return `session_present`,\n"
+    "  `state_scope`, and `state_reason`, and both are registered in every\n"
+    "  auth configuration (`get_session_state` is OpenBridge-only).\n"
     "- Rule: Re-establish context before the next tool call iff `state_scope == 'request'` or `state_reason` is not null.\n"
     "- Within a block the scope cannot change; one probe per block is sufficient.\n"
     "- `state_reason` enumerates: `\"no_mcp_session\"` (request-scoped transport),\n"
