@@ -277,7 +277,12 @@ async def test_set_active_profile_description_carries_rule():
     descriptions = await _collect_descriptions()
     desc = descriptions["set_active_profile"]
     assert THE_RULE in desc
-    assert "get_session_state" in desc
+    # `get_session_state` only exists under OpenBridge auth; these tools
+    # are registered in every configuration, so they must name a probe
+    # that is too.
+    assert "get_routing_state" in desc
+    assert "get_active_profile" in desc
+    assert "get_session_state" not in desc
 
 
 @pytest.mark.asyncio
@@ -285,7 +290,12 @@ async def test_set_region_description_carries_rule():
     descriptions = await _collect_descriptions()
     desc = descriptions["set_region"]
     assert THE_RULE in desc
-    assert "get_session_state" in desc
+    # `get_session_state` only exists under OpenBridge auth; these tools
+    # are registered in every configuration, so they must name a probe
+    # that is too.
+    assert "get_routing_state" in desc
+    assert "get_active_profile" in desc
+    assert "get_session_state" not in desc
 
 
 @pytest.mark.asyncio
@@ -293,7 +303,12 @@ async def test_clear_active_profile_description_carries_rule():
     descriptions = await _collect_descriptions()
     desc = descriptions["clear_active_profile"]
     assert THE_RULE in desc
-    assert "get_session_state" in desc
+    # `get_session_state` only exists under OpenBridge auth; these tools
+    # are registered in every configuration, so they must name a probe
+    # that is too.
+    assert "get_routing_state" in desc
+    assert "get_active_profile" in desc
+    assert "get_session_state" not in desc
 
 
 @pytest.mark.asyncio

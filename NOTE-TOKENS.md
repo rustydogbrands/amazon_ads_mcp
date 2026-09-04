@@ -4,19 +4,50 @@ This repo uses two refresh-token sources, one per brand. Two MCP server entries
 in `~/.claude.json` (`amazon-ads` for PBN, `amazon-ads-sh` for SH) load them
 side-by-side so both brands are reachable in the same Claude Code session.
 
-## ~/.claude.json `amazon-ads` entry → PBN
-- Refresh token for Photo Booth Nook.
-- Default profile: 3987763286122956 (PBN US seller).
-- Also covers PBN CA seller (profile 2560467967906921) — same token, just switch
-  active_profile.
-- Tools surface as `mcp__amazon-ads__*`.
+> **The two servers are NOT a brand boundary.** The PBN token reaches Sap Happy
+> profiles. See "Token scope" below before assuming the namespace protects you.
 
-## ~/.claude.json `amazon-ads-sh` entry → SH
+## Token scope (verified live)
+
+### `amazon-ads` entry → PBN token
+`/v2/profiles` with this token returns **six** profiles, spanning both brands:
+
+| Profile | Marketplace | Profile ID |
+| --- | --- | --- |
+| PBN US (default) | US | 3987763286122956 |
+| PBN CA | CA | 2560467967906921 |
+| PBN BR | BR | *(not captured — read from `list_profiles`)* |
+| PBN MX | MX | *(not captured — read from `list_profiles`)* |
+| **SH US** | US | **3778622964304303** |
+| **SH MX** | MX | **351892444800497** |
+
+Tools surface as `mcp__amazon-ads__*`.
+
+### `amazon-ads-sh` entry → SH token
 - Refresh token for Sap Happy Sugarin' Supplies.
 - Default profile: 3778622964304303 (SH US seller).
 - Also covers SH CA (1018256446748374) and SH MX (351892444800497) — same
   token, just switch active_profile.
 - Tools surface as `mcp__amazon-ads-sh__*`.
+
+### WARNING — the PBN server can write to Sap Happy's live account
+
+A `set_active_profile` to 3778622964304303 (SH US) or 351892444800497 (SH MX)
+**on the `amazon-ads` (PBN) server succeeds**, and every subsequent call on that
+server then hits Sap Happy's live account. Nothing in the server, the token, or
+the tool namespace blocks it — the PBN token genuinely carries those grants.
+
+Consequences to internalize:
+
+- **Server namespacing alone does NOT isolate the two brands.** Calling
+  `mcp__amazon-ads__*` is not by itself evidence that you are acting on PBN.
+- The *profile id* is the only real brand boundary. Verify it before any write:
+  `get_active_profile` returns the id currently in force.
+- A stale or inherited active profile is the dangerous case — the PBN server
+  left pointed at an SH profile will silently execute PBN-intended changes
+  against Sap Happy.
+- SH profile ids to treat as tripwires on the PBN server: `3778622964304303`,
+  `351892444800497`.
 
 ### CRITICAL GOTCHA — "Rusty Dog Outdoors" label is SH
 
@@ -37,17 +68,16 @@ have its own Amazon Ads presence.
 - **Default to MCP tool calls** for all Amazon Ads API access. The MCP handles
   token sourcing, region routing, and endpoint shape correctly.
 - For PBN work, use `mcp__amazon-ads__*` tools. For SH work, use
-  `mcp__amazon-ads-sh__*` tools. Pick the right server before acting — the
-  namespacing prevents cross-brand mistakes.
+  `mcp__amazon-ads-sh__*` tools. Pick the right server before acting — but
+  treat that as a convention, not a guard: **confirm the active profile id**
+  with `get_active_profile` before any write, because the PBN token can reach
+  SH US and SH MX.
 - Avoid raw httpx in helper scripts — past bugs (SP v3 expression-type case
   mismatch, GET /v2/portfolios endpoint shape) lived in helper scripts that
   bypassed the MCP. See `src/amazon_ads_mcp/utils/sp_enum_normalize.py` (commit
   2b506a2) for the SP v3 normalization helper that should be imported by any
   script that does need to parse response types.
 
-## Pattern to follow
-- **Default to MCP tool calls** for all Amazon Ads API access. The MCP handles token sourcing and endpoint shape correctly.
-- Avoid raw httpx in helper scripts — past bugs (SP v3 expression-type case mismatch, GET /v2/portfolios endpoint shape) lived in helper scripts that bypassed the MCP. See `src/amazon_ads_mcp/utils/sp_enum_normalize.py` (commit 2b506a2) for the SP v3 normalization helper that should be imported by any script that does need to parse response types.
-
 ---
 *Created 2026-05-05 during a Marketing weekly review session that surfaced the token-source split. Source: Rusty Dog Brands Cowork PPC pipeline.*
+*Updated 2026-09-03: corrected the PBN token scope to the verified six profiles (including SH US and SH MX) and added the cross-brand warning.*

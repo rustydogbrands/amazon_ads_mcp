@@ -308,6 +308,19 @@ _STATE_SCOPE_PROBE_HINT = (
     "sufficient."
 )
 
+# `get_session_state` is registered by ``register_identity_tools``, which
+# only runs under OpenBridge auth; under direct OAuth it never exists.
+# Tools registered in every configuration must therefore point at probes
+# that also exist in every configuration: `get_routing_state` and
+# `get_active_profile` both return the same three state fields.
+_STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE = (
+    "Probe the transport once per block via `get_routing_state` or "
+    "`get_active_profile` — both return `session_present`, "
+    "`state_scope`, and `state_reason`, and both are registered in "
+    "every auth configuration. The scope cannot change within a "
+    "block, so one probe per block is sufficient."
+)
+
 _STATE_REASON_VALUES = (
     "`state_reason` is `null` on the happy path. When non-null it "
     "takes one of:\n"
@@ -330,16 +343,23 @@ _TOKEN_SWAPPED_SUBTLETY = (
 )
 
 
-def _state_aware_description(action: str) -> str:
+def _state_aware_description(
+    action: str, probe_hint: str = _STATE_SCOPE_PROBE_HINT
+) -> str:
     """Build a tool description for a stateful tool.
 
     ``action`` is the one-line description of what the tool does.
     The state-scope contract block is appended verbatim so every
     tool surfaces the same rule and the same enumerated reasons.
+
+    ``probe_hint`` names the probe tool to call. Tools registered in
+    every auth configuration must pass
+    ``_STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE``; the default names
+    `get_session_state`, which only exists under OpenBridge auth.
     """
     return (
         f"{action}\n\n"
-        f"{_STATE_SCOPE_RULE} {_STATE_SCOPE_PROBE_HINT}\n\n"
+        f"{_STATE_SCOPE_RULE} {probe_hint}\n\n"
         f"{_STATE_REASON_VALUES}\n\n"
         f"{_TOKEN_SWAPPED_SUBTLETY}"
     )
@@ -434,7 +454,8 @@ async def register_profile_tools(server: FastMCP):
     @server.tool(
         name="set_active_profile",
         description=_state_aware_description(
-            "Set the active profile ID for Amazon Ads API calls."
+            "Set the active profile ID for Amazon Ads API calls.",
+            probe_hint=_STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE,
         ),
     )
     async def set_active_profile_tool(
@@ -461,7 +482,8 @@ async def register_profile_tools(server: FastMCP):
     @server.tool(
         name="clear_active_profile",
         description=_state_aware_description(
-            "Clear the active profile ID, falling back to the default."
+            "Clear the active profile ID, falling back to the default.",
+            probe_hint=_STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE,
         ),
     )
     async def clear_active_profile_tool(ctx: Context) -> ClearProfileResponse:
@@ -681,7 +703,8 @@ async def register_region_tools(server: FastMCP):
         description=_state_aware_description(
             "Set the region for Amazon Ads API calls. Pass `region` "
             "(preferred) or `region_code` (legacy alias). Valid "
-            "values: 'na', 'eu', 'fe'."
+            "values: 'na', 'eu', 'fe'.",
+            probe_hint=_STATE_SCOPE_PROBE_HINT_ALWAYS_AVAILABLE,
         ),
     )
     async def set_region_tool(
