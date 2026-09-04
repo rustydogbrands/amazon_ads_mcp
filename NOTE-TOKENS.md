@@ -10,14 +10,15 @@ side-by-side so both brands are reachable in the same Claude Code session.
 ## Token scope (verified live)
 
 ### `amazon-ads` entry → PBN token
-`/v2/profiles` with this token returns **six** profiles, spanning both brands:
+`/v2/profiles` with this token returns **six** profiles, spanning both brands
+(verified live 2026-09-03, region `na`, `sandbox: false`):
 
 | Profile | Marketplace | Profile ID |
 | --- | --- | --- |
 | PBN US (default) | US | 3987763286122956 |
 | PBN CA | CA | 2560467967906921 |
-| PBN BR | BR | *(not captured — read from `list_profiles`)* |
-| PBN MX | MX | *(not captured — read from `list_profiles`)* |
+| PBN BR | BR | 660397960864425 |
+| PBN MX | MX | 3373299208287812 |
 | **SH US** | US | **3778622964304303** |
 | **SH MX** | MX | **351892444800497** |
 
